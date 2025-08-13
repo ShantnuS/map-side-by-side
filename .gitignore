@@ -1,0 +1,42 @@
+### Node
+node_modules/
+dist/
+coverage/
+
+### Vite
+.vite/
+.vite-inspect/
+
+### Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### OS
+.DS_Store
+Thumbs.db
+
+### Editor/IDE
+.vscode/
+.idea/
+*.iml
+
+### Environment
+.env
+.env.local
+.env.*.local
+
+### Caches/Temp
+.cache/
+tmp/
+temp/
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+### Misc
+.eslintcache
+
