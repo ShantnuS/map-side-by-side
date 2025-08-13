@@ -127,6 +127,10 @@ This project builds upon several excellent open-source libraries:
 - **[Esri World Imagery](https://www.esri.com/)** - High-resolution satellite and aerial imagery
 - **[Nominatim](https://nominatim.org/)** - Search engine for OpenStreetMap data
 
+### Icons
+
+- **[Flaticons](https://www.flaticon.com/free-icon/architecture_9430475?term=map+layer&page=1&position=4&origin=search&related_id=9430475)** - Favicon and Layers icon
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

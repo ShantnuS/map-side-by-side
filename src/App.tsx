@@ -44,6 +44,7 @@ export const App: React.FC = () => {
 	const [isSearching, setIsSearching] = useState(false);
     const [showLeftLayers, setShowLeftLayers] = useState(false);
     const [showRightLayers, setShowRightLayers] = useState(false);
+    const [isAboutOpen, setIsAboutOpen] = useState(false);
     // Rectangle drawer removed (polygon-only)
 
 	const rotatedLeft = useMemo(() => leftPolygon ? rotatePolygon(leftPolygon, rotationDeg) : null, [leftPolygon, rotationDeg]);
@@ -116,6 +117,16 @@ export const App: React.FC = () => {
 			setRightTargetCenter([c.lat, c.lng]);
 		}
     }, []);
+
+    // Close About modal on Escape
+    useEffect(() => {
+        if (!isAboutOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsAboutOpen(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isAboutOpen]);
 
     // Add/remove a red X delete button inside the existing draw toolbar when a polygon exists
     useEffect(() => {
@@ -373,6 +384,15 @@ export const App: React.FC = () => {
 					<label>Rotate: <span className="rotation-value">{rotationDeg.toFixed(0)}°</span></label>
 					<input type="range" min={-180} max={180} step={1} value={rotationDeg} onChange={e => setRotationDeg(parseInt(e.target.value, 10))} />
 					<button onClick={() => setRotationDeg(0)}>Reset</button>
+					<button
+						type="button"
+						className="about-button"
+						aria-haspopup="dialog"
+						aria-controls="about-modal"
+						onClick={() => setIsAboutOpen(true)}
+					>
+						?
+					</button>
 				</div>
 			</div>
 			<div className="maps-container">
@@ -429,6 +449,36 @@ export const App: React.FC = () => {
 					</div>
 				</div>
 			</div>
+			{isAboutOpen && (
+				<div
+					id="about-modal"
+					className="modal-backdrop"
+					role="dialog"
+					aria-modal="true"
+					onClick={() => setIsAboutOpen(false)}
+				>
+					<div className="about-modal" onClick={(e) => e.stopPropagation()}>
+						<div className="modal-header">
+							<h2>About MapSideBySide</h2>
+							<button className="close-button" aria-label="Close" onClick={() => setIsAboutOpen(false)}>✕</button>
+						</div>
+						<div className="modal-content">
+							<p>
+								This project was created to help compare geographic areas side-by-side. Draw a shape on the left map and see it mirrored on the right to understand true scale and context.
+							</p>
+							<p>
+								Inspired by <a href="https://mapfrappe.com/" target="_blank" rel="noopener noreferrer">MapFrappe</a>.
+							</p>
+							<p>
+								Source code: <a href="https://github.com/ShantnuS/map-side-by-side" target="_blank" rel="noopener noreferrer">github.com/ShantnuS/map-side-by-side</a>
+							</p>
+						</div>
+						<div className="modal-actions">
+							<button onClick={() => setIsAboutOpen(false)}>Close</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
