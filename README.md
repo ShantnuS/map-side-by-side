@@ -1,6 +1,6 @@
 # Map<span style="color:#f97316">Side</span>By<span style="color:#3b82f6">Side</span>
 
-## [Site is live here!](https://ambitious-mud-07702a003.2.azurestaticapps.net)
+## [Site is live here!](https://mapsidebyside.shansingh.com/)
 
 A web app for comparing geographic shap es and sizes across different locations on Earth. Draw polygons on one map and see them accurately mirrored on another location to understand true scale and size relationships.
 
