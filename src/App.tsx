@@ -25,6 +25,7 @@ export const App: React.FC = () => {
 	const rightMapRef = useRef<L.Map | null>(null);
 	const leftOverlayRef = useRef<L.GeoJSON | null>(null);
 	const rightOverlayRef = useRef<L.GeoJSON | null>(null);
+    const rightMoveRafRef = useRef<number | null>(null);
 
 	const [leftPolygon, setLeftPolygon] = useState<GeoJsonPolygon | null>(null);
 	const [rotationDeg, setRotationDeg] = useState<number>(0);
@@ -102,9 +103,13 @@ export const App: React.FC = () => {
 			const map = L.map(rightContainerRef.current).setView(DEFAULT_RIGHT, 13);
 			// Initial tile layer will be set by the map mode effect
 			rightMapRef.current = map;
-			map.on('moveend', () => {
-				const c = map.getCenter();
-				setRightTargetCenter([c.lat, c.lng]);
+			map.on('move', () => {
+				if (rightMoveRafRef.current !== null) return;
+				rightMoveRafRef.current = requestAnimationFrame(() => {
+					rightMoveRafRef.current = null;
+					const c = map.getCenter();
+					setRightTargetCenter([c.lat, c.lng]);
+				});
 			});
 			const c = map.getCenter();
 			setRightTargetCenter([c.lat, c.lng]);
@@ -128,20 +133,26 @@ export const App: React.FC = () => {
 		}
 	}, [rotatedLeft]);
 
-	// Update right overlay when mirrored changes
+	// Update right overlay when mirrored changes (reuse layer for smooth updates)
 	useEffect(() => {
 		const map = rightMapRef.current;
 		if (!map) return;
-		if (rightOverlayRef.current) {
-			map.removeLayer(rightOverlayRef.current);
-			rightOverlayRef.current = null;
+		if (!mirroredRight) {
+			if (rightOverlayRef.current) {
+				map.removeLayer(rightOverlayRef.current);
+				rightOverlayRef.current = null;
+			}
+			return;
 		}
-		if (mirroredRight) {
+		if (!rightOverlayRef.current) {
 			rightOverlayRef.current = L.geoJSON(
 				mirroredRight as any,
 				{ style: { color: '#3b82f6', fillColor: '#3b82f6', interactive: false } as any, interactive: false }
 			);
 			rightOverlayRef.current.addTo(map);
+		} else {
+			rightOverlayRef.current.clearLayers();
+			rightOverlayRef.current.addData(mirroredRight as any);
 		}
 	}, [mirroredRight]);
 
