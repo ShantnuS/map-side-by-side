@@ -28,13 +28,13 @@ export const App: React.FC = () => {
 
 	const [leftPolygon, setLeftPolygon] = useState<GeoJsonPolygon | null>(null);
 	const [rotationDeg, setRotationDeg] = useState<number>(0);
-	const [satelliteLeft, setSatelliteLeft] = useState(() => {
-		const saved = localStorage.getItem('satelliteLeft');
-		return saved ? JSON.parse(saved) : false;
+	const [mapModeLeft, setMapModeLeft] = useState<'street' | 'satellite' | 'hybrid'>(() => {
+		const saved = localStorage.getItem('mapModeLeft');
+		return saved ? JSON.parse(saved) : 'street';
 	});
-	const [satelliteRight, setSatelliteRight] = useState(() => {
-		const saved = localStorage.getItem('satelliteRight');
-		return saved ? JSON.parse(saved) : false;
+	const [mapModeRight, setMapModeRight] = useState<'street' | 'satellite' | 'hybrid'>(() => {
+		const saved = localStorage.getItem('mapModeRight');
+		return saved ? JSON.parse(saved) : 'street';
 	});
 	const [rightTargetCenter, setRightTargetCenter] = useState<[number, number]>(DEFAULT_RIGHT);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -62,7 +62,7 @@ export const App: React.FC = () => {
 	useEffect(() => {
 		if (leftContainerRef.current && !leftMapRef.current) {
 			const map = L.map(leftContainerRef.current).setView(DEFAULT_LEFT, 13);
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+			// Initial tile layer will be set by the map mode effect
 			leftMapRef.current = map;
 			const drawControl = new (L as any).Control.Draw({
 				draw: { marker: false, circle: false, polyline: false, circlemarker: false, polygon: { allowIntersection: true, showArea: true }, rectangle: false },
@@ -87,7 +87,7 @@ export const App: React.FC = () => {
 		}
 		if (rightContainerRef.current && !rightMapRef.current) {
 			const map = L.map(rightContainerRef.current).setView(DEFAULT_RIGHT, 13);
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+			// Initial tile layer will be set by the map mode effect
 			rightMapRef.current = map;
 			map.on('moveend', () => {
 				const c = map.getCenter();
@@ -126,39 +126,86 @@ export const App: React.FC = () => {
 		}
 	}, [mirroredRight]);
 
-    // Toggle satellites (left)
+    // Handle left map mode changes
     useEffect(() => {
 		const map = leftMapRef.current;
 		if (!map) return;
-        // Keep reference tiles so we don't remove overlays
-        const currentBase = (map as any)._layers ? Object.values((map as any)._layers).find((l: any) => l instanceof L.TileLayer) as L.TileLayer | undefined : undefined;
-        if (currentBase) map.removeLayer(currentBase);
-        const next = satelliteLeft
-            ? L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' })
-            : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
-        next.addTo(map);
-	}, [satelliteLeft]);
+        
+        // Remove existing tile layers
+        const tileLayers: L.TileLayer[] = [];
+        map.eachLayer((layer) => {
+            if (layer instanceof L.TileLayer) {
+                tileLayers.push(layer);
+            }
+        });
+        tileLayers.forEach(layer => map.removeLayer(layer));
 
-    // Toggle satellites (right)
+        // Add appropriate layers based on mode
+        if (mapModeLeft === 'street') {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else if (mapModeLeft === 'satellite') {
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+                attribution: '© Esri'
+            }).addTo(map);
+        } else if (mapModeLeft === 'hybrid') {
+            // Satellite base layer
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+                attribution: '© Esri'
+            }).addTo(map);
+            // Labels overlay
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                attribution: '© OpenStreetMap contributors',
+                opacity: 0.4
+            }).addTo(map);
+        }
+	}, [mapModeLeft]);
+
+    // Handle right map mode changes
     useEffect(() => {
 		const map = rightMapRef.current;
 		if (!map) return;
-        const currentBase = (map as any)._layers ? Object.values((map as any)._layers).find((l: any) => l instanceof L.TileLayer) as L.TileLayer | undefined : undefined;
-        if (currentBase) map.removeLayer(currentBase);
-        const next = satelliteRight
-            ? L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' })
-            : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
-        next.addTo(map);
-	}, [satelliteRight]);
+        
+        // Remove existing tile layers
+        const tileLayers: L.TileLayer[] = [];
+        map.eachLayer((layer) => {
+            if (layer instanceof L.TileLayer) {
+                tileLayers.push(layer);
+            }
+        });
+        tileLayers.forEach(layer => map.removeLayer(layer));
 
-	// Save satellite preferences to localStorage
+        // Add appropriate layers based on mode
+        if (mapModeRight === 'street') {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        } else if (mapModeRight === 'satellite') {
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+                attribution: '© Esri'
+            }).addTo(map);
+        } else if (mapModeRight === 'hybrid') {
+            // Satellite base layer
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+                attribution: '© Esri'
+            }).addTo(map);
+            // Labels overlay
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                attribution: '© OpenStreetMap contributors',
+                opacity: 0.4
+            }).addTo(map);
+        }
+	}, [mapModeRight]);
+
+	// Save map mode preferences to localStorage
 	useEffect(() => {
-		localStorage.setItem('satelliteLeft', JSON.stringify(satelliteLeft));
-	}, [satelliteLeft]);
+		localStorage.setItem('mapModeLeft', JSON.stringify(mapModeLeft));
+	}, [mapModeLeft]);
 
 	useEffect(() => {
-		localStorage.setItem('satelliteRight', JSON.stringify(satelliteRight));
-	}, [satelliteRight]);
+		localStorage.setItem('mapModeRight', JSON.stringify(mapModeRight));
+	}, [mapModeRight]);
 
     // Search functionality using Nominatim geocoding
 	const handleSearch = useCallback(async (e: React.FormEvent) => {
@@ -241,7 +288,12 @@ export const App: React.FC = () => {
 					<div ref={leftContainerRef} className="map" />
 					<div className="controls">
 						<label>
-							<input type="checkbox" checked={satelliteLeft} onChange={e => setSatelliteLeft(e.target.checked)} /> Satellite
+							Map Type:
+							<select value={mapModeLeft} onChange={e => setMapModeLeft(e.target.value as 'street' | 'satellite' | 'hybrid')}>
+								<option value="street">Street</option>
+								<option value="satellite">Satellite</option>
+								<option value="hybrid">Hybrid</option>
+							</select>
 						</label>
 					</div>
 				</div>
@@ -250,7 +302,12 @@ export const App: React.FC = () => {
 					<div ref={rightContainerRef} className="map" />
 					<div className="controls">
 						<label>
-							<input type="checkbox" checked={satelliteRight} onChange={e => setSatelliteRight(e.target.checked)} /> Satellite
+							Map Type:
+							<select value={mapModeRight} onChange={e => setMapModeRight(e.target.value as 'street' | 'satellite' | 'hybrid')}>
+								<option value="street">Street</option>
+								<option value="satellite">Satellite</option>
+								<option value="hybrid">Hybrid</option>
+							</select>
 						</label>
 					</div>
 				</div>
