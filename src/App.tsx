@@ -6,8 +6,8 @@ import * as turf from '@turf/turf';
 
 type GeoJsonPolygon = GeoJSON.Feature<GeoJSON.Polygon>;
 
-const DEFAULT_LEFT: [number, number] = [37.7749, -122.4194];
-const DEFAULT_RIGHT: [number, number] = [40.7128, -74.006];
+const DEFAULT_LEFT: [number, number] = [51.5104, -0.3756];
+const DEFAULT_RIGHT: [number, number] = [51.4906, 0.1209];
 
 function rotatePolygon(polygon: GeoJsonPolygon, degrees: number): GeoJsonPolygon {
 	if (Math.abs(degrees) < 0.0001) return polygon;
