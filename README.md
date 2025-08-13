@@ -2,7 +2,7 @@
 
 ## [Site is live here!](https://ambitious-mud-07702a003.2.azurestaticapps.net)
 
-A web app for comparing geographic shapes and sizes across different locations on Earth. Draw polygons on one map and see them accurately mirrored on another location to understand true scale and size relationships.
+A web app for comparing geographic shap es and sizes across different locations on Earth. Draw polygons on one map and see them accurately mirrored on another location to understand true scale and size relationships.
 
 ## 🌍 Overview
 

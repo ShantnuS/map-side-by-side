@@ -40,6 +40,8 @@ export const App: React.FC = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [searchOnLeft, setSearchOnLeft] = useState(true);
 	const [isSearching, setIsSearching] = useState(false);
+    const [showLeftLayers, setShowLeftLayers] = useState(false);
+    const [showRightLayers, setShowRightLayers] = useState(false);
     // Rectangle drawer removed (polygon-only)
 
 	const rotatedLeft = useMemo(() => leftPolygon ? rotatePolygon(leftPolygon, rotationDeg) : null, [leftPolygon, rotationDeg]);
@@ -304,28 +306,52 @@ export const App: React.FC = () => {
 					<div className="corner-badge">Left map (draw here)</div>
 					<div ref={leftContainerRef} className="map" />
 					<div className="controls">
-						<label>
-							Map Type:
-							<select value={mapModeLeft} onChange={e => setMapModeLeft(e.target.value as 'street' | 'satellite' | 'hybrid')}>
-								<option value="street">Street</option>
-								<option value="satellite">Satellite</option>
-								<option value="hybrid">Hybrid</option>
-							</select>
-						</label>
+						<button
+							type="button"
+							className={`layers-button ${showLeftLayers ? 'open' : ''}`}
+							aria-haspopup="menu"
+							aria-expanded={showLeftLayers}
+							onClick={() => setShowLeftLayers(v => !v)}
+						>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 3L2 9l10 6 10-6-10-6Z" fill="currentColor"/>
+								<path d="M2 15l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M2 12l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							</svg>
+						</button>
+						{showLeftLayers && (
+							<div className="map-type-dropdown" role="menu">
+								<button className={mapModeLeft === 'street' ? 'active' : ''} onClick={() => { setMapModeLeft('street'); setShowLeftLayers(false); }}>Street</button>
+								<button className={mapModeLeft === 'satellite' ? 'active' : ''} onClick={() => { setMapModeLeft('satellite'); setShowLeftLayers(false); }}>Satellite</button>
+								<button className={mapModeLeft === 'hybrid' ? 'active' : ''} onClick={() => { setMapModeLeft('hybrid'); setShowLeftLayers(false); }}>Hybrid</button>
+							</div>
+						)}
 					</div>
 				</div>
 				<div className="map-pane">
 					<div className="corner-badge">Right map (mirrored)</div>
 					<div ref={rightContainerRef} className="map" />
 					<div className="controls">
-						<label>
-							Map Type:
-							<select value={mapModeRight} onChange={e => setMapModeRight(e.target.value as 'street' | 'satellite' | 'hybrid')}>
-								<option value="street">Street</option>
-								<option value="satellite">Satellite</option>
-								<option value="hybrid">Hybrid</option>
-							</select>
-						</label>
+						<button
+							type="button"
+							className={`layers-button ${showRightLayers ? 'open' : ''}`}
+							aria-haspopup="menu"
+							aria-expanded={showRightLayers}
+							onClick={() => setShowRightLayers(v => !v)}
+						>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 3L2 9l10 6 10-6-10-6Z" fill="currentColor"/>
+								<path d="M2 15l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M2 12l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							</svg>
+						</button>
+						{showRightLayers && (
+							<div className="map-type-dropdown" role="menu">
+								<button className={mapModeRight === 'street' ? 'active' : ''} onClick={() => { setMapModeRight('street'); setShowRightLayers(false); }}>Street</button>
+								<button className={mapModeRight === 'satellite' ? 'active' : ''} onClick={() => { setMapModeRight('satellite'); setShowRightLayers(false); }}>Satellite</button>
+								<button className={mapModeRight === 'hybrid' ? 'active' : ''} onClick={() => { setMapModeRight('hybrid'); setShowRightLayers(false); }}>Hybrid</button>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
