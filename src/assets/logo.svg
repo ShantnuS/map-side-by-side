@@ -1,0 +1,37 @@
+<svg width="200" height="40" viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background rounded rectangle -->
+  <rect x="2" y="2" width="196" height="36" rx="18" ry="18" fill="url(#logoGradient)" stroke="#1E3A8A" stroke-width="2"/>
+  
+  <!-- Text with modern font styling -->
+  <text x="100" y="26" text-anchor="middle" fill="white" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" letter-spacing="0.5px">
+    Mapsidebyside
+  </text>
+  
+  <!-- Map icon elements -->
+  <g transform="translate(12, 10)">
+    <!-- Left map -->
+    <rect x="0" y="0" width="8" height="6" rx="1" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="0.5"/>
+    <circle cx="2" cy="2" r="0.8" fill="rgba(255,255,255,0.6)"/>
+    
+    <!-- Right map -->
+    <rect x="10" y="0" width="8" height="6" rx="1" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.4)" stroke-width="0.5"/>
+    <circle cx="12" cy="2" r="0.8" fill="rgba(255,255,255,0.6)"/>
+    
+    <!-- Connection arrow -->
+    <path d="M 8.5 3 L 9.5 3" stroke="rgba(255,255,255,0.8)" stroke-width="1" marker-end="url(#arrowhead)"/>
+  </g>
+  
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.8)"/>
+    </marker>
+  </defs>
+</svg>

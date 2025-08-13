@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet';
 import 'leaflet-draw';
 import * as turf from '@turf/turf';
+// Logo is now text-based, no SVG import needed
 
 type GeoJsonPolygon = GeoJSON.Feature<GeoJSON.Polygon>;
 
@@ -27,9 +28,18 @@ export const App: React.FC = () => {
 
 	const [leftPolygon, setLeftPolygon] = useState<GeoJsonPolygon | null>(null);
 	const [rotationDeg, setRotationDeg] = useState<number>(0);
-	const [satelliteLeft, setSatelliteLeft] = useState(false);
-	const [satelliteRight, setSatelliteRight] = useState(false);
+	const [satelliteLeft, setSatelliteLeft] = useState(() => {
+		const saved = localStorage.getItem('satelliteLeft');
+		return saved ? JSON.parse(saved) : false;
+	});
+	const [satelliteRight, setSatelliteRight] = useState(() => {
+		const saved = localStorage.getItem('satelliteRight');
+		return saved ? JSON.parse(saved) : false;
+	});
 	const [rightTargetCenter, setRightTargetCenter] = useState<[number, number]>(DEFAULT_RIGHT);
+	const [searchQuery, setSearchQuery] = useState('');
+	const [searchOnLeft, setSearchOnLeft] = useState(true);
+	const [isSearching, setIsSearching] = useState(false);
     // Rectangle drawer removed (polygon-only)
 
 	const rotatedLeft = useMemo(() => leftPolygon ? rotatePolygon(leftPolygon, rotationDeg) : null, [leftPolygon, rotationDeg]);
@@ -141,14 +151,85 @@ export const App: React.FC = () => {
         next.addTo(map);
 	}, [satelliteRight]);
 
+	// Save satellite preferences to localStorage
+	useEffect(() => {
+		localStorage.setItem('satelliteLeft', JSON.stringify(satelliteLeft));
+	}, [satelliteLeft]);
+
+	useEffect(() => {
+		localStorage.setItem('satelliteRight', JSON.stringify(satelliteRight));
+	}, [satelliteRight]);
+
+    // Search functionality using Nominatim geocoding
+	const handleSearch = useCallback(async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!searchQuery.trim()) return;
+		
+		setIsSearching(true);
+		try {
+			const response = await fetch(
+				`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
+			);
+			const results = await response.json();
+			
+			if (results.length > 0) {
+				const result = results[0];
+				const lat = parseFloat(result.lat);
+				const lon = parseFloat(result.lon);
+				
+				const targetMap = searchOnLeft ? leftMapRef.current : rightMapRef.current;
+				if (targetMap) {
+					targetMap.setView([lat, lon], 13);
+					if (!searchOnLeft) {
+						setRightTargetCenter([lat, lon]);
+					}
+				}
+			}
+		} catch (error) {
+			console.error('Search failed:', error);
+		} finally {
+			setIsSearching(false);
+		}
+	}, [searchQuery, searchOnLeft]);
+
     // Removed preset shapes and rectangle draw actions
 
 	return (
 		<div className="app">
 			<div className="toolbar">
-                <div />
-				<div className="spacer" />
-				<div>
+                <div className="logo">
+					<span className="logo-text">
+						Map<span className="logo-side-orange">Side</span>By<span className="logo-side-blue">Side</span>
+					</span>
+				</div>
+				<div className="search-section">
+					<form onSubmit={handleSearch} className="search-form">
+						<input
+							type="text"
+							placeholder="Search location..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="search-input"
+							disabled={isSearching}
+						/>
+						<div className="search-toggle">
+							<span className={searchOnLeft ? 'active' : ''}>Left</span>
+							<label className="toggle-switch">
+								<input 
+									type="checkbox" 
+									checked={!searchOnLeft} 
+									onChange={(e) => setSearchOnLeft(!e.target.checked)}
+								/>
+								<span className="slider"></span>
+							</label>
+							<span className={!searchOnLeft ? 'active' : ''}>Right</span>
+						</div>
+						<button type="submit" disabled={isSearching || !searchQuery.trim()} className="search-button">
+							{isSearching ? '🔍' : '🔍'}
+						</button>
+					</form>
+				</div>
+				<div className="rotation-section">
 					<label>Rotate: {rotationDeg.toFixed(0)}°</label>
 					<input type="range" min={-180} max={180} step={1} value={rotationDeg} onChange={e => setRotationDeg(parseInt(e.target.value, 10))} />
 					<button onClick={() => setRotationDeg(0)}>Reset</button>
