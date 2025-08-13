@@ -25,6 +25,8 @@ export const App: React.FC = () => {
 	const rightMapRef = useRef<L.Map | null>(null);
 	const leftOverlayRef = useRef<L.GeoJSON | null>(null);
 	const rightOverlayRef = useRef<L.GeoJSON | null>(null);
+	const leftDeleteControlRef = useRef<HTMLElement | null>(null);
+    const rightMoveRafRef = useRef<number | null>(null);
 
 	const [leftPolygon, setLeftPolygon] = useState<GeoJsonPolygon | null>(null);
 	const [rotationDeg, setRotationDeg] = useState<number>(0);
@@ -40,6 +42,9 @@ export const App: React.FC = () => {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [searchOnLeft, setSearchOnLeft] = useState(true);
 	const [isSearching, setIsSearching] = useState(false);
+    const [showLeftLayers, setShowLeftLayers] = useState(false);
+    const [showRightLayers, setShowRightLayers] = useState(false);
+    const [isAboutOpen, setIsAboutOpen] = useState(false);
     // Rectangle drawer removed (polygon-only)
 
 	const rotatedLeft = useMemo(() => leftPolygon ? rotatePolygon(leftPolygon, rotationDeg) : null, [leftPolygon, rotationDeg]);
@@ -65,7 +70,18 @@ export const App: React.FC = () => {
 			// Initial tile layer will be set by the map mode effect
 			leftMapRef.current = map;
 			const drawControl = new (L as any).Control.Draw({
-				draw: { marker: false, circle: false, polyline: false, circlemarker: false, polygon: { allowIntersection: true, showArea: true }, rectangle: false },
+				draw: {
+					marker: false,
+					circle: false,
+					polyline: false,
+					circlemarker: false,
+					polygon: {
+						allowIntersection: true,
+						showArea: true,
+						shapeOptions: { color: '#fdba74', fillColor: '#fdba74', fillOpacity: 0.3, opacity: 0.8 }
+					},
+					rectangle: false
+				},
 				edit: false
 			});
 			map.addControl(drawControl);
@@ -89,14 +105,90 @@ export const App: React.FC = () => {
 			const map = L.map(rightContainerRef.current).setView(DEFAULT_RIGHT, 13);
 			// Initial tile layer will be set by the map mode effect
 			rightMapRef.current = map;
-			map.on('moveend', () => {
-				const c = map.getCenter();
-				setRightTargetCenter([c.lat, c.lng]);
+			map.on('move', () => {
+				if (rightMoveRafRef.current !== null) return;
+				rightMoveRafRef.current = requestAnimationFrame(() => {
+					rightMoveRafRef.current = null;
+					const c = map.getCenter();
+					setRightTargetCenter([c.lat, c.lng]);
+				});
 			});
 			const c = map.getCenter();
 			setRightTargetCenter([c.lat, c.lng]);
 		}
     }, []);
+
+    // Close About modal on Escape
+    useEffect(() => {
+        if (!isAboutOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsAboutOpen(false);
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isAboutOpen]);
+
+    // Add/remove a red X delete button inside the existing draw toolbar when a polygon exists
+    useEffect(() => {
+        const map = leftMapRef.current;
+        if (!map) return;
+
+        // Helper to remove the button if it exists
+        const removeButton = () => {
+            if (leftDeleteControlRef.current && leftDeleteControlRef.current.parentNode) {
+                leftDeleteControlRef.current.parentNode.removeChild(leftDeleteControlRef.current);
+                leftDeleteControlRef.current = null;
+            }
+        };
+
+        if (!leftPolygon) {
+            removeButton();
+            return;
+        }
+
+        if (leftDeleteControlRef.current) return; // already added
+
+        const container = map.getContainer();
+        const toolbar = container.querySelector('.leaflet-draw-toolbar') as HTMLElement | null;
+        if (!toolbar) return;
+
+        const btn = document.createElement('a');
+        btn.className = 'msbs-delete-btn leaflet-bar-part leaflet-bar-part-single';
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('title', 'Remove polygon');
+        btn.href = '#';
+        btn.textContent = '✕';
+
+        // Insert directly after the polygon button if present
+        const polygonBtn = toolbar.querySelector('a.leaflet-draw-draw-polygon');
+        if (polygonBtn && polygonBtn.parentNode) {
+            if (polygonBtn.nextSibling) {
+                polygonBtn.parentNode.insertBefore(btn, polygonBtn.nextSibling);
+            } else {
+                polygonBtn.parentNode.appendChild(btn);
+            }
+        } else {
+            toolbar.appendChild(btn);
+        }
+
+        const onClick = (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setLeftPolygon(null);
+            if (leftOverlayRef.current) {
+                map.removeLayer(leftOverlayRef.current);
+                leftOverlayRef.current = null;
+            }
+            removeButton();
+        };
+        btn.addEventListener('click', onClick);
+
+        leftDeleteControlRef.current = btn;
+
+        return () => {
+            btn.removeEventListener('click', onClick);
+        };
+    }, [leftPolygon]);
 
 	// Update left overlay when shape/rotation changes
 	useEffect(() => {
@@ -107,22 +199,34 @@ export const App: React.FC = () => {
 			leftOverlayRef.current = null;
 		}
 		if (rotatedLeft) {
-			leftOverlayRef.current = L.geoJSON(rotatedLeft as any, { style: { color: '#2563eb', interactive: false } as any, interactive: false });
+			leftOverlayRef.current = L.geoJSON(
+				rotatedLeft as any,
+				{ style: { color: '#f97316', fillColor: '#f97316', interactive: false } as any, interactive: false }
+			);
 			leftOverlayRef.current.addTo(map);
 		}
 	}, [rotatedLeft]);
 
-	// Update right overlay when mirrored changes
+	// Update right overlay when mirrored changes (reuse layer for smooth updates)
 	useEffect(() => {
 		const map = rightMapRef.current;
 		if (!map) return;
-		if (rightOverlayRef.current) {
-			map.removeLayer(rightOverlayRef.current);
-			rightOverlayRef.current = null;
+		if (!mirroredRight) {
+			if (rightOverlayRef.current) {
+				map.removeLayer(rightOverlayRef.current);
+				rightOverlayRef.current = null;
+			}
+			return;
 		}
-		if (mirroredRight) {
-			rightOverlayRef.current = L.geoJSON(mirroredRight as any, { style: { color: '#e11d48', interactive: false } as any, interactive: false });
+		if (!rightOverlayRef.current) {
+			rightOverlayRef.current = L.geoJSON(
+				mirroredRight as any,
+				{ style: { color: '#3b82f6', fillColor: '#3b82f6', interactive: false } as any, interactive: false }
+			);
 			rightOverlayRef.current.addTo(map);
+		} else {
+			rightOverlayRef.current.clearLayers();
+			rightOverlayRef.current.addData(mirroredRight as any);
 		}
 	}, [mirroredRight]);
 
@@ -250,7 +354,7 @@ export const App: React.FC = () => {
 					</span>
 				</div>
 				<div className="search-section">
-					<form onSubmit={handleSearch} className="search-form">
+					<form onSubmit={handleSearch} className={`search-form ${searchOnLeft ? 'left-selected' : 'right-selected'}`}>
 						<input
 							type="text"
 							placeholder="Search location..."
@@ -277,9 +381,18 @@ export const App: React.FC = () => {
 					</form>
 				</div>
 				<div className="rotation-section">
-					<label>Rotate: {rotationDeg.toFixed(0)}°</label>
+					<label>Rotate: <span className="rotation-value">{rotationDeg.toFixed(0)}°</span></label>
 					<input type="range" min={-180} max={180} step={1} value={rotationDeg} onChange={e => setRotationDeg(parseInt(e.target.value, 10))} />
 					<button onClick={() => setRotationDeg(0)}>Reset</button>
+					<button
+						type="button"
+						className="about-button"
+						aria-haspopup="dialog"
+						aria-controls="about-modal"
+						onClick={() => setIsAboutOpen(true)}
+					>
+						?
+					</button>
 				</div>
 			</div>
 			<div className="maps-container">
@@ -287,31 +400,85 @@ export const App: React.FC = () => {
 					<div className="corner-badge">Left map (draw here)</div>
 					<div ref={leftContainerRef} className="map" />
 					<div className="controls">
-						<label>
-							Map Type:
-							<select value={mapModeLeft} onChange={e => setMapModeLeft(e.target.value as 'street' | 'satellite' | 'hybrid')}>
-								<option value="street">Street</option>
-								<option value="satellite">Satellite</option>
-								<option value="hybrid">Hybrid</option>
-							</select>
-						</label>
+						<button
+							type="button"
+							className={`layers-button ${showLeftLayers ? 'open' : ''}`}
+							aria-haspopup="menu"
+							aria-expanded={showLeftLayers}
+							onClick={() => setShowLeftLayers(v => !v)}
+						>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 3L2 9l10 6 10-6-10-6Z" fill="currentColor"/>
+								<path d="M2 15l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M2 12l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							</svg>
+						</button>
+						{showLeftLayers && (
+							<div className="map-type-dropdown" role="menu">
+								<button className={mapModeLeft === 'street' ? 'active' : ''} onClick={() => { setMapModeLeft('street'); setShowLeftLayers(false); }}>Street</button>
+								<button className={mapModeLeft === 'satellite' ? 'active' : ''} onClick={() => { setMapModeLeft('satellite'); setShowLeftLayers(false); }}>Satellite</button>
+								<button className={mapModeLeft === 'hybrid' ? 'active' : ''} onClick={() => { setMapModeLeft('hybrid'); setShowLeftLayers(false); }}>Hybrid</button>
+							</div>
+						)}
 					</div>
 				</div>
 				<div className="map-pane">
 					<div className="corner-badge">Right map (mirrored)</div>
 					<div ref={rightContainerRef} className="map" />
 					<div className="controls">
-						<label>
-							Map Type:
-							<select value={mapModeRight} onChange={e => setMapModeRight(e.target.value as 'street' | 'satellite' | 'hybrid')}>
-								<option value="street">Street</option>
-								<option value="satellite">Satellite</option>
-								<option value="hybrid">Hybrid</option>
-							</select>
-						</label>
+						<button
+							type="button"
+							className={`layers-button ${showRightLayers ? 'open' : ''}`}
+							aria-haspopup="menu"
+							aria-expanded={showRightLayers}
+							onClick={() => setShowRightLayers(v => !v)}
+						>
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 3L2 9l10 6 10-6-10-6Z" fill="currentColor"/>
+								<path d="M2 15l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+								<path d="M2 12l10 6 10-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+							</svg>
+						</button>
+						{showRightLayers && (
+							<div className="map-type-dropdown" role="menu">
+								<button className={mapModeRight === 'street' ? 'active' : ''} onClick={() => { setMapModeRight('street'); setShowRightLayers(false); }}>Street</button>
+								<button className={mapModeRight === 'satellite' ? 'active' : ''} onClick={() => { setMapModeRight('satellite'); setShowRightLayers(false); }}>Satellite</button>
+								<button className={mapModeRight === 'hybrid' ? 'active' : ''} onClick={() => { setMapModeRight('hybrid'); setShowRightLayers(false); }}>Hybrid</button>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>
+			{isAboutOpen && (
+				<div
+					id="about-modal"
+					className="modal-backdrop"
+					role="dialog"
+					aria-modal="true"
+					onClick={() => setIsAboutOpen(false)}
+				>
+					<div className="about-modal" onClick={(e) => e.stopPropagation()}>
+						<div className="modal-header">
+							<h2>About MapSideBySide</h2>
+							<button className="close-button" aria-label="Close" onClick={() => setIsAboutOpen(false)}>✕</button>
+						</div>
+						<div className="modal-content">
+							<p>
+								This project was created to help compare geographic areas side-by-side. Draw a shape on the left map and see it mirrored on the right to understand true scale and context.
+							</p>
+							<p>
+								Inspired by <a href="https://mapfrappe.com/" target="_blank" rel="noopener noreferrer">MapFrappe</a>.
+							</p>
+							<p>
+								Source code: <a href="https://github.com/ShantnuS/map-side-by-side" target="_blank" rel="noopener noreferrer">github.com/ShantnuS/map-side-by-side</a>
+							</p>
+						</div>
+						<div className="modal-actions">
+							<button onClick={() => setIsAboutOpen(false)}>Close</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

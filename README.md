@@ -1,8 +1,8 @@
 # Map<span style="color:#f97316">Side</span>By<span style="color:#3b82f6">Side</span>
 
-## [Site is live here!](https://ambitious-mud-07702a003.2.azurestaticapps.net)
+## [Site is live here!](https://mapsidebyside.shansingh.com/)
 
-A web app for comparing geographic shapes and sizes across different locations on Earth. Draw polygons on one map and see them accurately mirrored on another location to understand true scale and size relationships.
+A web app for comparing geographic shap es and sizes across different locations on Earth. Draw polygons on one map and see them accurately mirrored on another location to understand true scale and size relationships.
 
 ## 🌍 Overview
 
@@ -126,6 +126,10 @@ This project builds upon several excellent open-source libraries:
 - **[OpenStreetMap](https://www.openstreetmap.org/)** - Free, editable map of the world
 - **[Esri World Imagery](https://www.esri.com/)** - High-resolution satellite and aerial imagery
 - **[Nominatim](https://nominatim.org/)** - Search engine for OpenStreetMap data
+
+### Icons
+
+- **[Flaticons](https://www.flaticon.com/free-icon/architecture_9430475?term=map+layer&page=1&position=4&origin=search&related_id=9430475)** - Favicon and Layers icon
 
 ## 📄 License
 
