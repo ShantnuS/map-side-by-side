@@ -25,6 +25,7 @@ export const App: React.FC = () => {
 	const rightMapRef = useRef<L.Map | null>(null);
 	const leftOverlayRef = useRef<L.GeoJSON | null>(null);
 	const rightOverlayRef = useRef<L.GeoJSON | null>(null);
+	const leftDeleteControlRef = useRef<HTMLElement | null>(null);
     const rightMoveRafRef = useRef<number | null>(null);
 
 	const [leftPolygon, setLeftPolygon] = useState<GeoJsonPolygon | null>(null);
@@ -115,6 +116,68 @@ export const App: React.FC = () => {
 			setRightTargetCenter([c.lat, c.lng]);
 		}
     }, []);
+
+    // Add/remove a red X delete button inside the existing draw toolbar when a polygon exists
+    useEffect(() => {
+        const map = leftMapRef.current;
+        if (!map) return;
+
+        // Helper to remove the button if it exists
+        const removeButton = () => {
+            if (leftDeleteControlRef.current && leftDeleteControlRef.current.parentNode) {
+                leftDeleteControlRef.current.parentNode.removeChild(leftDeleteControlRef.current);
+                leftDeleteControlRef.current = null;
+            }
+        };
+
+        if (!leftPolygon) {
+            removeButton();
+            return;
+        }
+
+        if (leftDeleteControlRef.current) return; // already added
+
+        const container = map.getContainer();
+        const toolbar = container.querySelector('.leaflet-draw-toolbar') as HTMLElement | null;
+        if (!toolbar) return;
+
+        const btn = document.createElement('a');
+        btn.className = 'msbs-delete-btn leaflet-bar-part leaflet-bar-part-single';
+        btn.setAttribute('role', 'button');
+        btn.setAttribute('title', 'Remove polygon');
+        btn.href = '#';
+        btn.textContent = '✕';
+
+        // Insert directly after the polygon button if present
+        const polygonBtn = toolbar.querySelector('a.leaflet-draw-draw-polygon');
+        if (polygonBtn && polygonBtn.parentNode) {
+            if (polygonBtn.nextSibling) {
+                polygonBtn.parentNode.insertBefore(btn, polygonBtn.nextSibling);
+            } else {
+                polygonBtn.parentNode.appendChild(btn);
+            }
+        } else {
+            toolbar.appendChild(btn);
+        }
+
+        const onClick = (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setLeftPolygon(null);
+            if (leftOverlayRef.current) {
+                map.removeLayer(leftOverlayRef.current);
+                leftOverlayRef.current = null;
+            }
+            removeButton();
+        };
+        btn.addEventListener('click', onClick);
+
+        leftDeleteControlRef.current = btn;
+
+        return () => {
+            btn.removeEventListener('click', onClick);
+        };
+    }, [leftPolygon]);
 
 	// Update left overlay when shape/rotation changes
 	useEffect(() => {

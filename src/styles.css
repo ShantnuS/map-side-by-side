@@ -270,6 +270,43 @@ button:hover { background: #f5f5f5; }
 
 .layers-button.open { color: #111827; }
 
+/* Delete polygon button */
+.delete-button {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	border: 1px solid #fecaca;
+	background: #fee2e2;
+	color: #ef4444;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 6px;
+}
+
+.delete-button:hover { background: #fecaca; }
+
+/* Style the custom Leaflet delete control to match draw button */
+/* Custom delete button that visually matches Leaflet draw buttons */
+/* Ensure our custom delete button overrides Leaflet.Draw icon sprites */
+.leaflet-draw-toolbar .msbs-delete-btn {
+    width: 26px;
+    height: 26px;
+    line-height: 26px;
+    text-align: center;
+    background-color: #fee2e2 !important;
+    background-image: none !important;
+    color: #ef4444 !important;
+    font-weight: 700;
+    font-size: 16px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.leaflet-draw-toolbar .msbs-delete-btn:hover {
+    background-color: #fecaca !important;
+}
+
 /* Dropdown for map type */
 .map-type-dropdown {
 	position: absolute;
