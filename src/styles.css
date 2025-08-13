@@ -69,6 +69,12 @@
 	font-weight: 600;
 }
 
+/* When left is selected, make the active label orange */
+.left-selected .search-toggle span.active { color: #f97316; }
+
+/* When right is selected, ensure active label is blue */
+.right-selected .search-toggle span.active { color: #3b82f6; }
+
 .toggle-switch {
 	position: relative;
 	display: inline-block;
@@ -154,6 +160,10 @@ input:checked + .slider:before {
 .search-button:hover:not(:disabled) {
 	background: #2563eb;
 }
+
+/* Orange button when left is selected */
+.left-selected .search-button { background: #f97316; }
+.left-selected .search-button:hover:not(:disabled) { background: #ea580c; }
 
 .search-button:disabled {
 	background: #9ca3af;

@@ -267,7 +267,7 @@ export const App: React.FC = () => {
 					</span>
 				</div>
 				<div className="search-section">
-					<form onSubmit={handleSearch} className="search-form">
+					<form onSubmit={handleSearch} className={`search-form ${searchOnLeft ? 'left-selected' : 'right-selected'}`}>
 						<input
 							type="text"
 							placeholder="Search location..."
