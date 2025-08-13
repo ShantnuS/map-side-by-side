@@ -370,7 +370,7 @@ export const App: React.FC = () => {
 					</form>
 				</div>
 				<div className="rotation-section">
-					<label>Rotate: {rotationDeg.toFixed(0)}°</label>
+					<label>Rotate: <span className="rotation-value">{rotationDeg.toFixed(0)}°</span></label>
 					<input type="range" min={-180} max={180} step={1} value={rotationDeg} onChange={e => setRotationDeg(parseInt(e.target.value, 10))} />
 					<button onClick={() => setRotationDeg(0)}>Reset</button>
 				</div>

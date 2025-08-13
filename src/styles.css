@@ -176,6 +176,17 @@ input:checked + .slider:before {
 	gap: 8px;
 }
 
+/* Prevent layout shift when rotation value toggles sign */
+.rotation-value {
+	display: inline-block;
+	width: 6ch; /* fits -180° consistently */
+	font-variant-numeric: tabular-nums; /* fixed-width digits */
+	text-align: right;
+}
+
+/* Keep the entire label width stable regardless of sign */
+.rotation-section label { min-width: 14ch; }
+
 .maps-container {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
