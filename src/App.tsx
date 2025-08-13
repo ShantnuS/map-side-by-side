@@ -65,7 +65,18 @@ export const App: React.FC = () => {
 			// Initial tile layer will be set by the map mode effect
 			leftMapRef.current = map;
 			const drawControl = new (L as any).Control.Draw({
-				draw: { marker: false, circle: false, polyline: false, circlemarker: false, polygon: { allowIntersection: true, showArea: true }, rectangle: false },
+				draw: {
+					marker: false,
+					circle: false,
+					polyline: false,
+					circlemarker: false,
+					polygon: {
+						allowIntersection: true,
+						showArea: true,
+						shapeOptions: { color: '#fdba74', fillColor: '#fdba74', fillOpacity: 0.3, opacity: 0.8 }
+					},
+					rectangle: false
+				},
 				edit: false
 			});
 			map.addControl(drawControl);
@@ -107,7 +118,10 @@ export const App: React.FC = () => {
 			leftOverlayRef.current = null;
 		}
 		if (rotatedLeft) {
-			leftOverlayRef.current = L.geoJSON(rotatedLeft as any, { style: { color: '#2563eb', interactive: false } as any, interactive: false });
+			leftOverlayRef.current = L.geoJSON(
+				rotatedLeft as any,
+				{ style: { color: '#f97316', fillColor: '#f97316', interactive: false } as any, interactive: false }
+			);
 			leftOverlayRef.current.addTo(map);
 		}
 	}, [rotatedLeft]);
@@ -121,7 +135,10 @@ export const App: React.FC = () => {
 			rightOverlayRef.current = null;
 		}
 		if (mirroredRight) {
-			rightOverlayRef.current = L.geoJSON(mirroredRight as any, { style: { color: '#e11d48', interactive: false } as any, interactive: false });
+			rightOverlayRef.current = L.geoJSON(
+				mirroredRight as any,
+				{ style: { color: '#3b82f6', fillColor: '#3b82f6', interactive: false } as any, interactive: false }
+			);
 			rightOverlayRef.current.addTo(map);
 		}
 	}, [mirroredRight]);
