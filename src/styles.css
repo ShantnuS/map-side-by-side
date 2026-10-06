@@ -4,11 +4,13 @@
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
+	height: 100dvh; /* excludes mobile browser chrome where supported */
 }
 
 .toolbar {
 	display: flex;
-	gap: 16px;
+	flex-wrap: wrap; /* wrap onto a second row on mid-width screens instead of overflowing */
+	gap: 8px 16px;
 	align-items: center;
 	padding: 10px 12px;
 	background: #ffffff;
@@ -248,6 +250,7 @@ input:checked + .slider:before {
 	grid-template-columns: 1fr 1fr;
 	gap: 0;
 	flex: 1;
+	min-height: 0;
 }
 
 .map-pane {
@@ -406,3 +409,61 @@ button:hover { background: #f5f5f5; }
 	color: #1d4ed8;
 }
 
+
+/* Mobile: stack the toolbar rows and the two maps vertically */
+@media (max-width: 768px) {
+	.toolbar {
+		flex-wrap: wrap;
+		gap: 8px 12px;
+		padding: 8px 12px;
+	}
+
+	.logo { flex: 1; }
+
+	.search-section,
+	.rotation-section {
+		flex-basis: 100%;
+		max-width: none;
+		min-width: 0;
+	}
+
+	.search-form { gap: 8px; min-width: 0; }
+
+	.search-input {
+		min-width: 0;
+		font-size: 16px; /* prevents iOS zooming in on focus */
+		padding: 8px 10px;
+	}
+
+	.search-button { padding: 8px 12px; }
+
+	.rotation-section label { min-width: 0; white-space: nowrap; }
+
+	.rotation-value { width: 5ch; }
+
+	.rotation-section input[type="range"] {
+		flex: 1;
+		min-width: 0;
+		height: 28px; /* larger touch target */
+	}
+
+	.about-button { flex-shrink: 0; }
+
+	.maps-container {
+		grid-template-columns: 1fr;
+		grid-template-rows: 1fr 1fr;
+	}
+
+	.map-pane {
+		border-left: none;
+		border-top: 2px solid #e5e5e5;
+		min-height: 0;
+	}
+
+	.map-pane:first-child { border-top: none; }
+
+	/* Keep the layers button clear of the attribution, which wraps on narrow screens */
+	.controls { bottom: 28px; padding: 4px; }
+
+	.leaflet-control-attribution { font-size: 10px; }
+}

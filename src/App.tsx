@@ -123,6 +123,16 @@ export const App: React.FC = () => {
 			const c = map.getCenter();
 			setRightTargetCenter([c.lat, c.lng]);
 		}
+
+		// Leaflet only re-measures on window resize; the containers can also change size when the
+		// layout reflows (e.g. the toolbar wrapping or mobile browser chrome showing/hiding).
+		const resizeObserver = new ResizeObserver(() => {
+			leftMapRef.current?.invalidateSize();
+			rightMapRef.current?.invalidateSize();
+		});
+		if (leftContainerRef.current) resizeObserver.observe(leftContainerRef.current);
+		if (rightContainerRef.current) resizeObserver.observe(rightContainerRef.current);
+		return () => resizeObserver.disconnect();
     }, []);
 
     // Close About modal on Escape
