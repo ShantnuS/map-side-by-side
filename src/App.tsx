@@ -12,9 +12,63 @@ const DEFAULT_RIGHT: [number, number] = [51.4906, 0.1209];
 // OSM's tile usage policy requires a Referer header and blocks requests without one
 // (https://osm.wiki/Blocked). Set the policy explicitly so a restrictive server-wide
 // Referrer-Policy (e.g. `same-origin`) doesn't strip it from cross-origin tile requests.
-const TILE_REFERRER_POLICY: ReferrerPolicy = 'strict-origin-when-cross-origin';
+const TILE_REFERRER_POLICY = 'strict-origin-when-cross-origin' as const;
 const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ESRI_IMAGERY_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+// Transparent label overlays drawn on top of the imagery (roads first so place names sit above them)
+const ESRI_LABEL_URLS = [
+	'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+	'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+];
+
+type MapMode = 'street' | 'satellite' | 'satellite-plain';
+
+const MAP_MODE_OPTIONS: { mode: MapMode; label: string }[] = [
+	{ mode: 'street', label: 'Street' },
+	{ mode: 'satellite', label: 'Satellite' },
+	{ mode: 'satellite-plain', label: 'Satellite (no labels)' },
+];
+
+function loadMapMode(storageKey: string): MapMode {
+	try {
+		const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+		// 'hybrid' was the old satellite + labels option, which 'satellite' now covers
+		if (saved === 'hybrid') return 'satellite';
+		if (MAP_MODE_OPTIONS.some(o => o.mode === saved)) return saved;
+	} catch {
+		// Ignore unreadable saved values and fall back to the default
+	}
+	return 'street';
+}
+
+function setMapTileLayers(map: L.Map, mode: MapMode) {
+	const tileLayers: L.TileLayer[] = [];
+	map.eachLayer((layer) => {
+		if (layer instanceof L.TileLayer) {
+			tileLayers.push(layer);
+		}
+	});
+	tileLayers.forEach(layer => map.removeLayer(layer));
+
+	if (mode === 'street') {
+		L.tileLayer(OSM_TILE_URL, {
+			referrerPolicy: TILE_REFERRER_POLICY,
+			attribution: '© OpenStreetMap contributors'
+		}).addTo(map);
+		return;
+	}
+
+	L.tileLayer(ESRI_IMAGERY_URL, {
+		referrerPolicy: TILE_REFERRER_POLICY,
+		attribution: '© Esri'
+	}).addTo(map);
+	if (mode === 'satellite') {
+		ESRI_LABEL_URLS.forEach(url => L.tileLayer(url, {
+			referrerPolicy: TILE_REFERRER_POLICY,
+			attribution: '© Esri'
+		}).addTo(map));
+	}
+}
 
 function rotatePolygon(polygon: GeoJsonPolygon, degrees: number): GeoJsonPolygon {
 	if (Math.abs(degrees) < 0.0001) return polygon;
@@ -37,14 +91,8 @@ export const App: React.FC = () => {
 
 	const [leftPolygon, setLeftPolygon] = useState<GeoJsonPolygon | null>(null);
 	const [rotationDeg, setRotationDeg] = useState<number>(0);
-	const [mapModeLeft, setMapModeLeft] = useState<'street' | 'satellite' | 'hybrid'>(() => {
-		const saved = localStorage.getItem('mapModeLeft');
-		return saved ? JSON.parse(saved) : 'street';
-	});
-	const [mapModeRight, setMapModeRight] = useState<'street' | 'satellite' | 'hybrid'>(() => {
-		const saved = localStorage.getItem('mapModeRight');
-		return saved ? JSON.parse(saved) : 'street';
-	});
+	const [mapModeLeft, setMapModeLeft] = useState<MapMode>(() => loadMapMode('mapModeLeft'));
+	const [mapModeRight, setMapModeRight] = useState<MapMode>(() => loadMapMode('mapModeRight'));
 	const [rightTargetCenter, setRightTargetCenter] = useState<[number, number]>(DEFAULT_RIGHT);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [searchOnLeft, setSearchOnLeft] = useState(true);
@@ -247,84 +295,13 @@ export const App: React.FC = () => {
 		}
 	}, [mirroredRight]);
 
-    // Handle left map mode changes
+    // Handle map mode changes
     useEffect(() => {
-		const map = leftMapRef.current;
-		if (!map) return;
-        
-        // Remove existing tile layers
-        const tileLayers: L.TileLayer[] = [];
-        map.eachLayer((layer) => {
-            if (layer instanceof L.TileLayer) {
-                tileLayers.push(layer);
-            }
-        });
-        tileLayers.forEach(layer => map.removeLayer(layer));
-
-        // Add appropriate layers based on mode
-        if (mapModeLeft === 'street') {
-            L.tileLayer(OSM_TILE_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-        } else if (mapModeLeft === 'satellite') {
-            L.tileLayer(ESRI_IMAGERY_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© Esri'
-            }).addTo(map);
-        } else if (mapModeLeft === 'hybrid') {
-            // Satellite base layer
-            L.tileLayer(ESRI_IMAGERY_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© Esri'
-            }).addTo(map);
-            // Labels overlay
-            L.tileLayer(OSM_TILE_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© OpenStreetMap contributors',
-                opacity: 0.4
-            }).addTo(map);
-        }
+		if (leftMapRef.current) setMapTileLayers(leftMapRef.current, mapModeLeft);
 	}, [mapModeLeft]);
 
-    // Handle right map mode changes
     useEffect(() => {
-		const map = rightMapRef.current;
-		if (!map) return;
-        
-        // Remove existing tile layers
-        const tileLayers: L.TileLayer[] = [];
-        map.eachLayer((layer) => {
-            if (layer instanceof L.TileLayer) {
-                tileLayers.push(layer);
-            }
-        });
-        tileLayers.forEach(layer => map.removeLayer(layer));
-
-        // Add appropriate layers based on mode
-        if (mapModeRight === 'street') {
-            L.tileLayer(OSM_TILE_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-        } else if (mapModeRight === 'satellite') {
-            L.tileLayer(ESRI_IMAGERY_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© Esri'
-            }).addTo(map);
-        } else if (mapModeRight === 'hybrid') {
-            // Satellite base layer
-            L.tileLayer(ESRI_IMAGERY_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© Esri'
-            }).addTo(map);
-            // Labels overlay
-            L.tileLayer(OSM_TILE_URL, { 
-                referrerPolicy: TILE_REFERRER_POLICY,
-                attribution: '© OpenStreetMap contributors',
-                opacity: 0.4
-            }).addTo(map);
-        }
+		if (rightMapRef.current) setMapTileLayers(rightMapRef.current, mapModeRight);
 	}, [mapModeRight]);
 
 	// Save map mode preferences to localStorage
@@ -440,9 +417,9 @@ export const App: React.FC = () => {
 						</button>
 						{showLeftLayers && (
 							<div className="map-type-dropdown" role="menu">
-								<button className={mapModeLeft === 'street' ? 'active' : ''} onClick={() => { setMapModeLeft('street'); setShowLeftLayers(false); }}>Street</button>
-								<button className={mapModeLeft === 'satellite' ? 'active' : ''} onClick={() => { setMapModeLeft('satellite'); setShowLeftLayers(false); }}>Satellite</button>
-								<button className={mapModeLeft === 'hybrid' ? 'active' : ''} onClick={() => { setMapModeLeft('hybrid'); setShowLeftLayers(false); }}>Hybrid</button>
+								{MAP_MODE_OPTIONS.map(({ mode, label }) => (
+									<button key={mode} className={mapModeLeft === mode ? 'active' : ''} onClick={() => { setMapModeLeft(mode); setShowLeftLayers(false); }}>{label}</button>
+								))}
 							</div>
 						)}
 					</div>
@@ -466,9 +443,9 @@ export const App: React.FC = () => {
 						</button>
 						{showRightLayers && (
 							<div className="map-type-dropdown" role="menu">
-								<button className={mapModeRight === 'street' ? 'active' : ''} onClick={() => { setMapModeRight('street'); setShowRightLayers(false); }}>Street</button>
-								<button className={mapModeRight === 'satellite' ? 'active' : ''} onClick={() => { setMapModeRight('satellite'); setShowRightLayers(false); }}>Satellite</button>
-								<button className={mapModeRight === 'hybrid' ? 'active' : ''} onClick={() => { setMapModeRight('hybrid'); setShowRightLayers(false); }}>Hybrid</button>
+								{MAP_MODE_OPTIONS.map(({ mode, label }) => (
+									<button key={mode} className={mapModeRight === mode ? 'active' : ''} onClick={() => { setMapModeRight(mode); setShowRightLayers(false); }}>{label}</button>
+								))}
 							</div>
 						)}
 					</div>
