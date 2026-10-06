@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 # Third-party actions are pinned to commit SHAs since the deploy job has access to the
-# deployment token; bump them deliberately (e.g. via Dependabot).
+# deployment token; bump them deliberately by updating the SHA and version comment together.
 permissions:
   contents: read
 
