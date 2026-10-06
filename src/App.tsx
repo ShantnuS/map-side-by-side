@@ -9,6 +9,13 @@ type GeoJsonPolygon = GeoJSON.Feature<GeoJSON.Polygon>;
 const DEFAULT_LEFT: [number, number] = [51.5104, -0.3756];
 const DEFAULT_RIGHT: [number, number] = [51.4906, 0.1209];
 
+// OSM's tile usage policy requires a Referer header and blocks requests without one
+// (https://osm.wiki/Blocked). Set the policy explicitly so a restrictive server-wide
+// Referrer-Policy (e.g. `same-origin`) doesn't strip it from cross-origin tile requests.
+const TILE_REFERRER_POLICY: ReferrerPolicy = 'strict-origin-when-cross-origin';
+const OSM_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ESRI_IMAGERY_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
 function rotatePolygon(polygon: GeoJsonPolygon, degrees: number): GeoJsonPolygon {
 	if (Math.abs(degrees) < 0.0001) return polygon;
 	const c = turf.centroid(polygon);
@@ -246,20 +253,24 @@ export const App: React.FC = () => {
 
         // Add appropriate layers based on mode
         if (mapModeLeft === 'street') {
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            L.tileLayer(OSM_TILE_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
         } else if (mapModeLeft === 'satellite') {
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+            L.tileLayer(ESRI_IMAGERY_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© Esri'
             }).addTo(map);
         } else if (mapModeLeft === 'hybrid') {
             // Satellite base layer
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+            L.tileLayer(ESRI_IMAGERY_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© Esri'
             }).addTo(map);
             // Labels overlay
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            L.tileLayer(OSM_TILE_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© OpenStreetMap contributors',
                 opacity: 0.4
             }).addTo(map);
@@ -282,20 +293,24 @@ export const App: React.FC = () => {
 
         // Add appropriate layers based on mode
         if (mapModeRight === 'street') {
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            L.tileLayer(OSM_TILE_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
         } else if (mapModeRight === 'satellite') {
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+            L.tileLayer(ESRI_IMAGERY_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© Esri'
             }).addTo(map);
         } else if (mapModeRight === 'hybrid') {
             // Satellite base layer
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
+            L.tileLayer(ESRI_IMAGERY_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© Esri'
             }).addTo(map);
             // Labels overlay
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            L.tileLayer(OSM_TILE_URL, { 
+                referrerPolicy: TILE_REFERRER_POLICY,
                 attribution: '© OpenStreetMap contributors',
                 opacity: 0.4
             }).addTo(map);
